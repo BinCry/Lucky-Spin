@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vòng quay may mắn</title>
+  <style>
+    :root{
+      --bg1:#ffffff;
+      --bg2:#f3fbff;
+      --card:#ffffffcc;
+      --text:#0f172a;
+      --muted:#64748b;
+      --shadow: 0 20px 60px rgba(2, 6, 23, .12);
+      --ring: 0 0 0 6px rgba(56,189,248,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      min-height:100svh;
+      background:
+        radial-gradient(900px 500px at 20% 10%, #dbeafe 0%, transparent 60%),
+        radial-gradient(800px 500px at 80% 20%, #cffafe 0%, transparent 60%),
+        radial-gradient(900px 500px at 50% 90%, #fde68a 0%, transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+
+    .wrap{
+      width:min(980px, 100%);
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:18px;
+      align-items:stretch;
+    }
+    @media (max-width: 860px){
+      .wrap{grid-template-columns: 1fr; gap:14px;}
+    }
+
+    .card{
+      background:var(--card);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .left{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .title{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    h1{
+      font-size: clamp(20px, 3.2vw, 28px);
+      margin:0;
+      line-height:1.15;
+      letter-spacing:-.02em;
+    }
+    .sub{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .badge{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(56,189,248,.15);
+      border:1px solid rgba(56,189,248,.25);
+      color:#075985;
+      white-space:nowrap;
+    }
+
+    .stage{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));
+      border:1px dashed rgba(15,23,42,.12);
+      min-height: 360px;
+    }
+
+    canvas{
+      width:min(420px, 88vw);
+      height:auto;
+      aspect-ratio:1/1;
+      border-radius:50%;
+      box-shadow: 0 18px 45px rgba(2,6,23,.18);
+      background:#fff;
+    }
+
+    .pointer{
+      position:absolute;
+      top:6px;
+      left:50%;
+      transform:translateX(-50%);
+      width:0;height:0;
+      border-left:14px solid transparent;
+      border-right:14px solid transparent;
+      border-bottom:26px solid #ef4444;
+      filter: drop-shadow(0 8px 10px rgba(2,6,23,.25));
+    }
+
+    .hub{
+      position:absolute;
+      width:min(112px, 26vw);
+      aspect-ratio:1/1;
+      border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #ffffff, #e2e8f0);
+      box-shadow: 0 14px 28px rgba(2,6,23,.2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:10px;
+      border: 6px solid rgba(56,189,248,.25);
+      pointer-events:none;
+      user-select:none;
+    }
+    .hub strong{display:block; font-size:14px; line-height:1.05}
+    .hub span{display:block; margin-top:4px; color:var(--muted); font-size:12px}
+
+    .right{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .panel{
+      border-radius:18px;
+      padding:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.45));
+      border:1px solid rgba(15,23,42,.08);
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius:14px;
+      padding:12px 14px;
+      font-weight:800;
+      font-size:14px;
+      transition: transform .08s ease, filter .2s ease, box-shadow .2s ease, opacity .2s ease;
+      box-shadow: 0 14px 28px rgba(2,6,23,.14);
+      touch-action: manipulation;
+    }
+    button:active{transform: translateY(1px) scale(.99)}
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      box-shadow:none;
+      transform:none;
+    }
+    .primary{
+      background: linear-gradient(135deg, #22c55e, #06b6d4);
+      color:white;
+      flex:1 1 180px;
+    }
+    .ghost{
+      background: rgba(255,255,255,.7);
+      border:1px solid rgba(15,23,42,.10);
+      color:var(--text);
+      flex:1 1 180px;
+      box-shadow:none;
+    }
+    .primary:focus-visible, .ghost:focus-visible{
+      outline:none;
+      box-shadow: var(--shadow), var(--ring);
+    }
+
+    .msg{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .toast{
+      flex:1;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.78);
+      min-height:46px;
+      line-height:1.35;
+      font-size:14px;
+    }
+    .toast b{font-weight:900}
+    .hint{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+      margin-top:10px;
+    }
+    .list{
+      margin:10px 0 0;
+      padding-left:18px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+    footer{
+      margin-top:auto;
+      color:rgba(100,116,139,.9);
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .tiny{opacity:.9}
+
+    /* modal */
+    .modal{
+      position:fixed;
+      inset:0;
+      background: rgba(2,6,23,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modal.open{display:flex}
+    .modalCard{
+      width:min(520px, 100%);
+      border-radius:20px;
+      background:white;
+      box-shadow: 0 24px 80px rgba(2,6,23,.35);
+      padding:16px;
+      border:1px solid rgba(15,23,42,.10);
+    }
+    .modalCard h2{
+      margin:0 0 6px;
+      font-size:18px;
+      letter-spacing:-.01em;
+    }
+    .modalCard p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+      white-space:pre-line;
+    }
+    .modalActions{display:flex; gap:10px; margin-top:14px;}
+    .ok{
+      background: linear-gradient(135deg, #3b82f6, #a855f7);
+      color:#fff;
+      flex:1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <section class="card left">
+      <div class="title">
+        <div>
+          <h1>Vòng quay may mắn 💸</h1>
+          <p class="sub">Bạn có <b id="spinsLeftText">1</b> lượt quay. Trúng <b>“Thêm lượt 🎟️”</b> mới được quay tiếp.</p>
+        </div>
+        <div class="badge">Mobile-friendly</div>
+      </div>
+
+      <div class="stage" aria-label="Vòng quay">
+        <div class="pointer" aria-hidden="true"></div>
+        <canvas id="wheel" width="600" height="600"></canvas>
+        <div class="hub" aria-hidden="true">
+          <div>
+            <strong>Quay nào!</strong>
+            <span>Chúc bạn may mắn</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card right">
+      <div class="panel">
+        <div class="row">
+          <button class="primary" id="spinBtn">🎡 Quay ngay</button>
+          <button class="ghost" id="resetBtn" title="Vẽ lại vòng quay (không đổi tỉ lệ)">Làm mới vòng</button>
+        </div>
+
+        <div class="msg">
+          <div class="toast" id="toast">Sẵn sàng chưa? Bấm <b>Quay ngay</b> nhé.</div>
+        </div>
+
+        <div class="hint">
+          Gợi ý:
+          <ul class="list">
+            <li>Trúng tiền hoặc “Không trúng” là kết thúc</li>
+            <li>Chỉ “Thêm lượt 🎟️” mới được quay tiếp</li>
+          </ul>
+        </div>
+      </div>
+
+      <footer>
+        <div class="tiny">© Copyright by MQuan học UIT</div>
+        <div class="tiny">Deploy: GitHub Pages</div>
+      </footer>
+    </aside>
+  </div>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="modalCard">
+      <h2 id="mTitle">Kết quả</h2>
+      <p id="mBody">...</p>
+      <div class="modalActions">
+        <button class="ok" id="closeModal">OK</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+
+  const spinBtn = document.getElementById('spinBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const toast = document.getElementById('toast');
+  const spinsLeftText = document.getElementById('spinsLeftText');
+
+  const modal = document.getElementById('modal');
+  const mBody = document.getElementById('mBody');
+  const closeModal = document.getElementById('closeModal');
+
+  // Các ô (mệnh giá VNĐ + "Không trúng" + "Thêm lượt")
+  const prizes = [
+    { label: "Không trúng", kind: "lose" },
+    { label: "Thêm lượt 🎟️", kind: "extra" },
+    { label: "1000đ" },
+    { label: "2000đ" },
+    { label: "5000đ" },
+    { label: "10.000đ" },
+    { label: "15.000đ" },
+    { label: "20.000đ" },
+    { label: "25.000đ" },
+    { label: "30.000đ" },
+    { label: "50.000đ" }
+  ];
+
+  // Màu sáng, nổi bật
+  const colors = [
+    "#fef08a", "#bae6fd", "#bbf7d0", "#fecaca", "#e9d5ff",
+    "#fdba74", "#a7f3d0", "#c7d2fe", "#99f6e4", "#fde68a",
+    "#ddd6fe"
+  ];
+
+  // Điều chỉnh xác suất ở đây (không rig):
+  // - pLose: không trúng
+  // - pExtra: thêm lượt
+  // phần còn lại = trúng tiền
+  const pLose  = 0.75;
+  const pExtra = 0.25;
+
+  // Trạng thái quay
+  let angle = 0;
+  let spinning = false;
+
+  // Mặc định 1 lượt
+  let spinsLeft = 1;
+
+  function updateSpinsLeftUI() {
+    spinsLeftText.textContent = String(spinsLeft);
+    if (spinsLeft <= 0) {
+      spinBtn.disabled = true;
+    }
+  }
+
+  function setToast(html) {
+    toast.innerHTML = html;
+  }
+
+  function openModal(text) {
+    mBody.textContent = text;
+    modal.classList.add('open');
+    closeModal.focus();
+  }
+
+  function close() {
+    modal.classList.remove('open');
+    if (!spinBtn.disabled) spinBtn.focus();
+  }
+
+  closeModal.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) close();
+  });
+
+  function drawWheel() {
+    const { width, height } = canvas;
+    const cx = width / 2, cy = height / 2;
+    const radius = Math.min(cx, cy) - 10;
+    const n = prizes.length;
+    const arc = (Math.PI * 2) / n;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+
+    for (let i = 0; i < n; i++) {
+      const start = i * arc;
+      const end = start + arc;
+
+      // slice
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, start, end);
+      ctx.closePath();
+
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fill();
+
+      // viền
+      ctx.strokeStyle = "rgba(15,23,42,.12)";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // text
+      ctx.save();
+      ctx.rotate(start + arc / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "rgba(15,23,42,.92)";
+      ctx.font = "800 22px ui-sans-serif, system-ui";
+      ctx.shadowColor = "rgba(255,255,255,.7)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(prizes[i].label, radius - 18, 8);
+      ctx.restore();
+    }
+
+    // tâm vòng
+    ctx.beginPath();
+    ctx.arc(0, 0, 26, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Pointer ở đỉnh (12h). Với cách vẽ, góc 0 nằm ở hướng 3h nên cần quy đổi.
+  function getSelectedIndex(finalAngle) {
+    const n = prizes.length;
+    const arc = (Math.PI * 2) / n;
+
+    let a = (Math.PI * 1.5 - finalAngle) % (Math.PI * 2);
+    if (a < 0) a += Math.PI * 2;
+
+    return Math.floor(a / arc) % n;
+  }
+
+  // Chọn mục tiêu theo xác suất (KHÔNG rig)
+  function chooseTargetIndex() {
+    const loseIndex = prizes.findIndex(p => p.kind === "lose");
+    const extraIndex = prizes.findIndex(p => p.kind === "extra");
+
+    const r = Math.random();
+    if (r < pLose) return loseIndex;
+    if (r < pLose + pExtra) return extraIndex;
+
+    // còn lại: chọn tiền
+    const candidates = prizes
+      .map((_, i) => i)
+      .filter(i => i !== loseIndex && i !== extraIndex);
+
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  // Tạo góc kết thúc sao cho rơi đúng vào targetIndex
+  function computeFinalAngleForIndex(targetIndex, extraSpins = 10) {
+    const n = prizes.length;
+    const arc = (Math.PI * 2) / n;
+
+    const center = targetIndex * arc + arc / 2;
+    const base = (Math.PI * 1.5) - center;
+    const k = (Math.PI * 2) * extraSpins;
+
+    // jitter nhỏ để tự nhiên (nhưng vẫn nằm trong slice)
+    const jitter = (Math.random() * 0.35 - 0.175) * arc;
+    return base + k + jitter;
+  }
+
+  function animateSpin(targetAngle) {
+    spinning = true;
+    spinBtn.disabled = true;
+    resetBtn.disabled = true;
+    setToast("Đang quay... 💫");
+
+    const start = angle;
+    const change = targetAngle - start;
+    const duration = 4200;
+    const t0 = performance.now();
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+
+    function frame(t) {
+      const p = Math.min(1, (t - t0) / duration);
+      angle = start + change * ease(p);
+      drawWheel();
+
+      if (p < 1) requestAnimationFrame(frame);
+      else {
+        spinning = false;
+        resetBtn.disabled = false;
+
+        const idx = getSelectedIndex(angle);
+        const prize = prizes[idx];
+
+        if (prize.kind === "lose") {
+          setToast("Kết quả: <b>Không trúng</b> 😭 — Chúc bạn may mắn lần sau!");
+          openModal("Không trúng 😭\nChúc bạn may mắn lần sau!");
+          spinsLeft = 0; // kết thúc
+
+        } else if (prize.kind === "extra") {
+          spinsLeft += 1; // thêm lượt
+          setToast(`Bạn trúng: <b>${prize.label}</b> Bạn còn <b>${spinsLeft}</b> lượt.`);
+          openModal(`Bạn trúng ${prize.label} \nBạn còn ${spinsLeft} lượt quay!`);
+
+        } else {
+          setToast(`Bạn trúng: <b>${prize.label}</b> 🎉`);
+          openModal(`Bạn trúng ${prize.label} 🎉`);
+          spinsLeft = 0; // trúng tiền là kết thúc
+        }
+
+        updateSpinsLeftUI();
+
+        // nếu còn lượt thì mở lại nút quay
+        if (spinsLeft > 0) {
+          spinBtn.disabled = false;
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  spinBtn.addEventListener('click', () => {
+    if (spinning) return;
+
+    if (spinsLeft <= 0) {
+      setToast("Bạn đã hết lượt quay ");
+      spinBtn.disabled = true;
+      return;
+    }
+
+    //  trừ lượt trước khi quay
+    spinsLeft--;
+    updateSpinsLeftUI();
+
+    const targetIndex = chooseTargetIndex();
+
+    //  quay tít thật: 10–13 vòng
+    const finalAngle = computeFinalAngleForIndex(
+      targetIndex,
+      10 + Math.floor(Math.random() * 4)
+    );
+
+    animateSpin(finalAngle);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (spinning) return;
+    angle = 0;
+    drawWheel();
+    setToast(`Đã làm mới vòng. Bạn còn <b>${spinsLeft}</b> lượt.`);
+  });
+
+  // init
+  drawWheel();
+  updateSpinsLeftUI();
+})();
+</script>
+</body>
+</html>
